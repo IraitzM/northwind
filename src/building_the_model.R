@@ -32,10 +32,10 @@ q <- 'CREATE TABLE customers (
     contactname character varying(30),
     contacttitle character varying(30),
     address character varying(60),
-    city character varying(15),
-    region character varying(15),
+    city character varying(30),
+    region character varying(30),
     postalcode character varying(10),
-    country character varying(15),
+    country character varying(30),
     phone character varying(24),
     fax character varying(24)
 );'
@@ -44,7 +44,7 @@ exec(con,q)
 # Employees
 q <- 'CREATE TABLE employees (
     employeeid smallint NOT NULL,
-    lastnname character varying(20) NOT NULL,
+    lastname character varying(20) NOT NULL,
     firstname character varying(10) NOT NULL,
     title character varying(30),
     titleofcourtesy character varying(25),
@@ -83,13 +83,7 @@ q <- 'CREATE TABLE orders (
     requireddate date,
     shippeddate date,
     shipvia smallint,
-    freight real,
-    shipname character varying(40),
-    shipaddress character varying(60),
-    shipcity character varying(15),
-    shipregion character varying(15),
-    shippostalcode character varying(10),
-    shipcountry character varying(15)
+    freight real
 );'
 exec(con, q)
 
@@ -99,7 +93,7 @@ q <- 'CREATE TABLE products (
     productname character varying(40) NOT NULL,
     supplierid smallint,
     categoryid smallint,
-    quantityper_unit character varying(20),
+    quantityperunit character varying(20),
     unitprice real,
     unitsinstock smallint,
     unitsonorder smallint,
@@ -152,21 +146,88 @@ q <-'ALTER TABLE ONLY order_details
 ADD CONSTRAINT fk_order_details_orders FOREIGN KEY (orderid) REFERENCES orders;'
 exec(con, q)
 
-q <-'ALTER TABLE ONLY employees
-ADD CONSTRAINT fk_employees_employees FOREIGN KEY (reportsto) REFERENCES employees;'
-exec(con, q)
-
 # Show it
 show(con)
 
 # Get data in ##################################################################
-
-# Orders
-load(con, "orders")
-load(con, "products")
-load(con, "order_details")
 load(con, "customers")
 load(con, "employees")
+load(con, "products")
+load(con, "orders")
+load(con, "order_details")
+
+# Now queries can be sent to interrogate our system ############################
+res <- query(con, "SELECT * FROM employees WHERE region = 'NULL'")
+View(res)
+
+# Or ask it to compute something
+query(con, "SELECT count(companyName) AS count FROM customers")
+query(con, "SELECT count(distinct companyName) AS count FROM customers")
+
+# Thanks to relational algebra we can combine information from table and 
+# denormalize the information
+res <- query(con, "SELECT *
+FROM employees e
+INNER JOIN orders o ON o.employeeid = e.employeeid")
+View(res)
+
+# And ask for computation
+res <- query(con, "SELECT e.firstname, count(orderid) as sales
+FROM employees e
+INNER JOIN orders o ON o.employeeid = e.employeeid
+GROUP BY e.firstname
+ORDER BY 2 DESC")
+View(res)
+
+# Transactions #################################################################
+# Lets do a sale, we will create a function that does the following
+# 1.- We should identify the customer
+# 2.- Verify that the product exists
+# 3.- Create a new order
+# 4.- Associate products with orders
+sale <- function(who, what, price, quantity, e_id){
+  c_id <- query(con, paste0("SELECT customerid 
+                                     FROM customers 
+                                     WHERE companyname = '",who,"'"))
+  
+  # Let's see if there is product stock
+  p_id <- query(con, paste0("SELECT productid 
+                                     FROM products 
+                                     WHERE productname = '",what,"' 
+                                     AND unitsinstock > 0 
+                                     AND discontinued = 0"))
+  
+  # We get the next order id
+  o_id <- query(con, "SELECT MAX(orderid)+1 AS orderid FROM orders")
+  
+  # We insert a new order
+  insert <- paste0("INSERT INTO orders(orderid, customerid, employeeid, orderdate) VALUES ("
+                   ,o_id$orderid,",'"
+                   ,c_id$customerid,"',"
+                   ,e_id,","
+                   ,"'2020-11-09 00:00:00'",")"
+  )
+  exec(con, insert)
+  
+  # Finally we do insert the order details to associate product to the order
+  insert <- paste0("INSERT INTO order_details VALUES ("
+                   ,o_id$orderid,","
+                   ,p_id$productid,","
+                   ,price,","
+                   ,quantity,",0)"
+  )
+  exec(con, insert)
+  
+  return(o_id$orderid)
+}
+
+#  Customer : Frankenversand
+#  Product : Geitost
+#  Price : Product sale price
+#  Quantity
+#  Employee : who sold it
+o_id <- sale("Frankenversand", "Geitost", 0.10, 1, 5)
+query(con, paste0("SELECT * FROM order_details WHERE orderid = ",o_id))
 
 # Clear the database
 clearDB(con)

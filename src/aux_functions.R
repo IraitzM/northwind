@@ -61,7 +61,7 @@ exec <- function(con, query){
 # -> connection : database connection
 # -> fname : file name matching table name
 load <- function(con, fname){
-  df <- read.csv(paste0("data/", fname, ".csv"), as.is=T)
+  df <- read.csv(paste0("data/", fname, ".csv"), as.is=T, sep = ',')
   colnames(df)<-tolower(colnames(df))
   dbAppendTable(con, fname, df)
 }
