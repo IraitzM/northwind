@@ -82,6 +82,55 @@ u_s <- query(con, "SELECT unitsinstock FROM products WHERE productname = 'Geitos
 o_id <- sale("Frankenversand", "Geitost", 0.10, u_s+5, 5)
 query(con, "SELECT * FROM products WHERE productname = 'Geitost'")
 
+# Better prepare a procedure for this
+exec(con, 
+     "CREATE OR REPLACE PROCEDURE sale(who text, what text, price float, quantity int, e_id int)
+   LANGUAGE 'plpgsql'
+   AS $$
+DECLARE
+       c_id text;
+       p_id int;
+       o_id int;
+       units int;
+BEGIN 
+
+  SELECT customerid INTO c_id FROM customers WHERE companyname = $1;
+  IF c_id IS NULL THEN 
+    RAISE EXCEPTION 'Cannot find customer %', $1; 
+  END IF; 
+  
+  SELECT productid INTO p_id 
+    FROM products 
+    WHERE productname = $2 
+      AND discontinued = 0;
+  IF p_id IS NULL THEN 
+    RAISE EXCEPTION 'Cannot find product %', $2; 
+  END IF; 
+  
+  SELECT MAX(orderid)+1 INTO o_id FROM orders;
+  
+  INSERT INTO orders(orderid, customerid, employeeid, orderdate) VALUES (o_id, c_id, e_id, '2020-11-09 00:00:00');
+  
+  UPDATE products SET unitsinstock = unitsinstock - $4 WHERE productid = p_id;
+  
+  INSERT INTO order_details VALUES (o_id,p_id,$3,$4,0);
+  
+  SELECT unitsinstock INTO units FROM products 
+    WHERE productname = $2;
+  
+  IF units < 0 THEN
+    RAISE NOTICE 'Not enough units in stock';
+    ROLLBACK;
+  END IF;
+END;
+$$;")
+
+# Now we can see how the DB evolves
+dbExecute(con, "CALL sale('Iraitz', 'Geitost', 0.10, 1, 5)")
+dbExecute(con, "CALL sale('Frankenversand', 'Harddrive', 0.10, 1, 5)")
+dbExecute(con, "CALL sale('Frankenversand', 'Geitost', 0.10, 10, 5)")
+dbExecute(con, "CALL sale('Frankenversand', 'Geitost', 0.10, 1000, 5)")
+
 # Clear the database
 clearDB(con)
 

@@ -207,21 +207,189 @@ And show how our information is there.
 query(con, "SELECT * FROM customers")
 ```
 Update the information on that tuple.
+
 ```{r}
 exec(con, "UPDATE customers SET contactname = 'Iraitz' WHERE companyname = 'Deusto'")
 query(con, "SELECT * FROM customers")
 ```
 And check if our constraints do their work.
+
 ```{r}
 exec(con, "INSERT INTO customers(customerid, companyname) VALUES (1, 'Deusto')")
 ```
 
 Or just delete the information.
+
 ```{r}
 exec(con, "DELETE FROM customers WHERE companyname = 'Deusto'")
 query(con, "SELECT * FROM customers")
 ```
 
+We can just bulk load some information so we can test also RDBMS computing capabilities.
+
+```{r}
+load <- function(con, fname){
+  df <- read.csv(paste0("../data/", fname, ".csv"), as.is=T, sep = ',')
+  colnames(df)<-tolower(colnames(df))
+  dbAppendTable(con, fname, df)
+}
+
+load(con, "customers")
+load(con, "employees")
+load(con, "products")
+load(con, "orders")
+load(con, "order_details")
+
+```
+```{r}
+query(con, "SELECT * FROM employees WHERE region = 'NULL'")
+```
+
+```{r}
+# Or ask it to compute something
+query(con, "SELECT count(distinct companyName) AS count FROM customers")
+```
+```{r}
+# Thanks to relational algebra we can combine information from table
+# and ask for computation
+query(con, "SELECT e.firstname, count(orderid) as sales
+FROM employees e
+INNER JOIN orders o ON o.employeeid = e.employeeid
+GROUP BY e.firstname
+ORDER BY 2 DESC")
+```
+So, we have the model and the data the only thing missing then is the business process. We can just try to envision how a SALES process would be. Steps would be:
+
+* We should identify the customer
+* Verify that the product exists
+* Create a new order
+* Associate products with orders
+
+```{r}
+# Lets do a sale, we will create a function that does the following
+sale <- function(who, what, price, quantity, e_id){
+  c_id <- query(con, paste0("SELECT customerid 
+                                     FROM customers 
+                                     WHERE companyname = '",who,"'"))
+  
+  # Let's see if there is product stock
+  p_id <- query(con, paste0("SELECT productid 
+                                     FROM products 
+                                     WHERE productname = '",what,"' 
+                                     AND unitsinstock > ", quantity," 
+                                     AND discontinued = 0"))
+  
+  # We get the next order id
+  o_id <- query(con, "SELECT MAX(orderid)+1 AS orderid FROM orders")
+  
+  # We insert a new order
+  insert <- paste0("INSERT INTO orders(orderid, customerid, employeeid, orderdate) VALUES ("
+                   ,o_id$orderid,",'"
+                   ,c_id$customerid,"',"
+                   ,e_id,","
+                   ,"'2020-11-09 00:00:00'",")"
+  )
+  exec(con, insert)
+  
+  # We take the quantity out of stock
+  exec(con, paste0("UPDATE products SET unitsinstock = unitsinstock - ",quantity," WHERE productid = ", p_id))
+  
+  # Finally we do insert the order details to associate product to the order
+  insert <- paste0("INSERT INTO order_details VALUES ("
+                   ,o_id$orderid,","
+                   ,p_id$productid,","
+                   ,price,","
+                   ,quantity,",0)"
+  )
+  exec(con, insert)
+  
+  return(o_id$orderid)
+}
+```
+
+And use that function to make a sale.
+
+```{r}
+#  Customer : Frankenversand
+#  Product : Geitost
+#  Price : Product sale price
+#  Quantity
+#  Employee : who sold it
+o_id <- sale("Frankenversand", "Geitost", 0.10, 1, 5)
+query(con, paste0("SELECT * FROM order_details WHERE orderid = ",o_id))
+```
+We can check the stock.
+
+```{r}
+u_s <- query(con, "SELECT unitsinstock FROM products WHERE productname = 'Geitost'")$unitsinstock
+u_s
+```
+What happens if we buy more than we can sell?
+
+```{r}
+# What happens if we go out of stock?
+o_id <- sale("Frankenversand", "Geitost", 0.10, u_s+5, 5)
+query(con, "SELECT * FROM products WHERE productname = 'Geitost'")
+```
+
+Oh my! Did we brake something? Well, that's the issue with transactions. We need to ensure that business processes work fine.
+
+```{r}
+exec(con, 
+"CREATE OR REPLACE PROCEDURE sale(who text, what text, price float, quantity int, e_id int)
+   LANGUAGE 'plpgsql'
+   AS $$
+DECLARE
+       c_id text;
+       p_id int;
+       o_id int;
+       units int;
+BEGIN 
+
+  SELECT customerid INTO c_id FROM customers WHERE companyname = $1;
+  IF c_id IS NULL THEN 
+    RAISE EXCEPTION 'Cannot find customer %', $1; 
+  END IF; 
+  
+  SELECT productid INTO p_id 
+    FROM products 
+    WHERE productname = $2 
+      AND discontinued = 0;
+  IF p_id IS NULL THEN 
+    RAISE EXCEPTION 'Cannot find product %', $2; 
+  END IF; 
+  
+  SELECT MAX(orderid)+1 INTO o_id FROM orders;
+  
+  INSERT INTO orders(orderid, customerid, employeeid, orderdate) VALUES (o_id, c_id, e_id, '2020-11-09 00:00:00');
+  
+  UPDATE products SET unitsinstock = unitsinstock - $4 WHERE productid = p_id;
+  
+  INSERT INTO order_details VALUES (o_id,p_id,$3,$4,0);
+  
+  SELECT unitsinstock INTO units FROM products 
+    WHERE productname = $2;
+  
+  IF units < 0 THEN
+    RAISE NOTICE 'Not enough units in stock';
+    ROLLBACK;
+  END IF;
+END;
+$$;")
+```
+
+With those error controls one guaranties that the operations work fine or give some information about the potential problems while keeping de DBs in a correct status.
+
+```{r}
+dbExecute(con, "CALL sale('Iraitz', 'Geitost', 0.10, 1, 5)")
+```
+
+```{r}
+dbExecute(con, "CALL sale('Frankenversand', 'Harddrive', 0.10, 1, 5)")
+```
+```{r}
+dbExecute(con, "CALL sale('Frankenversand', 'Geitost', 0.10, 1000, 5)")
+```
 Let's clean everything up and disconnect from the database.
 
 ```{r}
