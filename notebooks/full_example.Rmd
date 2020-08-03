@@ -1,17 +1,40 @@
-# Let's explore how to model our retail database
-# First we will need to import required libraries to interact with our local PostgreSQL RDBMS
+---
+title: "Building a RDBMS for a retail business"
+output: html_notebook
+---
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook where several aspects involved on modeling a database will be explored.
+
+For this notebook to work, one of the first things we will need to do is have a RDBMS system running. In particular, [PostgreSQL](https://www.postgresql.org/) will be used so you can download and install it or just user a docker image and instantiate an image for this demo using following commands:
+
+To pull the image from the repository
+* docker pull postgres
+
+Container can be started, killed and restarted as many times as you want:
+
+* docker run --name some-postgres -e POSTGRES_PASSWORD=postgres -d postgres
+* docker kill some-postgres
+* docker restart some-postgres
+
+And its local IP address found using inspect command so we can connect and work with it:
+
+* docker inspect some-postgres
+
+Next thing, a bunch of libraries will be needed to run our code.
+
+```{r}
 renv::restore()
+```
 
-# Auxiliary functions
-source('src/aux_functions.R')
+Also, auxiliary functions to ease the tasks need to be loaded.
 
-# Software
-# PostgreSQL
+```{r}
+source('../src/aux_functions.R')
+```
 
-# Could be used Docker for this:
-# 1. docker pull postgres
-# 2. docker run --name some-postgres -e POSTGRES_PASSWORD=postgres -d postgres
-# 3. docker inspect some-postgres
+We have the RDBMS up and running and all libraries loaded to start working. Lets first connect to the database.
+
+```{r}
 dhost <- '172.17.0.2'
 
 # Let's connect to our database
@@ -22,9 +45,11 @@ con <- DBI::dbConnect(RPostgres::Postgres(),
 
 # List existing tables
 list(con)
+```
 
-# Create relations #############################################################
+Ok, empty! Let's start creating our data schema so we can then support our business processes and manage the data they need and generate.
 
+```{r}
 # Customers
 q <- 'CREATE TABLE customers (
     customerid bpchar NOT NULL,
@@ -40,7 +65,12 @@ q <- 'CREATE TABLE customers (
     fax character varying(24)
 );'
 exec(con,q)
+show(con)
+```
 
+It works, lets do the rest.
+
+```{r}
 # Employees
 q <- 'CREATE TABLE employees (
     employeeid smallint NOT NULL,
@@ -104,11 +134,11 @@ exec(con, q)
 
 # List existing tables
 list(con)
+```
 
-# Show the tables
-show(con)
+So, once relations are there we can start putting the constraint that will help as have a consistent data model for our retail business. First the Primery Keys for our relations/tables.
 
-# Constraints ##################################################################
+```{r}
 # Add PK to customers
 q <-'ALTER TABLE ONLY customers
 ADD CONSTRAINT pk_customers PRIMARY KEY (customerid);'
@@ -133,7 +163,11 @@ exec(con, q)
 q <-'ALTER TABLE ONLY products
 ADD CONSTRAINT pk_products PRIMARY KEY (productid);'
 exec(con, q)
+```
 
+Now let's relate the Keys found in the rest of the tables to the row the refer to.
+
+```{r}
 # Now relate FKs orders.customerid with customers
 q <-'ALTER TABLE ONLY orders
 ADD CONSTRAINT fk_orders_customers FOREIGN KEY (customerid) REFERENCES customers;'
@@ -153,9 +187,45 @@ exec(con, q)
 q <-'ALTER TABLE ONLY order_details
 ADD CONSTRAINT fk_order_details_orders FOREIGN KEY (orderid) REFERENCES orders;'
 exec(con, q)
+```
 
-# Show it
+Good! Our schema should be complete by now. Let's check.
+
+```{r}
 show(con)
+```
 
-# Disconnect from the database
-dbDisconnect(con)
+Now that our model is complete we can use it for some data manipulation. Inserting a customer for example.
+
+```{r}
+exec(con, "INSERT INTO customers(customerid, companyname) VALUES (1, 'Deusto')")
+```
+
+And show how our information is there.
+
+```{r}
+query(con, "SELECT * FROM customers")
+```
+Update the information on that tuple.
+```{r}
+exec(con, "UPDATE customers SET contactname = 'Iraitz' WHERE companyname = 'Deusto'")
+query(con, "SELECT * FROM customers")
+```
+And check if our constraints do their work.
+```{r}
+exec(con, "INSERT INTO customers(customerid, companyname) VALUES (1, 'Deusto')")
+```
+
+Or just delete the information.
+```{r}
+exec(con, "DELETE FROM customers WHERE companyname = 'Deusto'")
+query(con, "SELECT * FROM customers")
+```
+
+Let's clean everything up and disconnect from the database.
+
+```{r}
+clearDB(con)
+DBI::dbDisconnect(con)
+```
+
