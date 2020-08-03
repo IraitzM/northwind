@@ -37,7 +37,6 @@ sale <- function(who, what, price, quantity, e_id){
   p_id <- query(con, paste0("SELECT productid 
                                      FROM products 
                                      WHERE productname = '",what,"' 
-                                     AND unitsinstock > ", quantity," 
                                      AND discontinued = 0"))
   
   # We get the next order id

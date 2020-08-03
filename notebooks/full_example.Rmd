@@ -275,8 +275,7 @@ sale <- function(who, what, price, quantity, e_id){
   # Let's see if there is product stock
   p_id <- query(con, paste0("SELECT productid 
                                      FROM products 
-                                     WHERE productname = '",what,"' 
-                                     AND unitsinstock > ", quantity," 
+                                     WHERE productname = '",what,"'
                                      AND discontinued = 0"))
   
   # We get the next order id
@@ -329,7 +328,7 @@ What happens if we buy more than we can sell?
 ```{r}
 # What happens if we go out of stock?
 o_id <- sale("Frankenversand", "Geitost", 0.10, u_s+5, 5)
-query(con, "SELECT * FROM products WHERE productname = 'Geitost'")
+query(con, "SELECT productid, productname, unitsinstock FROM products WHERE productname = 'Geitost'")
 ```
 
 Oh my! Did we brake something? Well, that's the issue with transactions. We need to ensure that business processes work fine.
