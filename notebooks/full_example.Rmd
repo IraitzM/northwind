@@ -136,7 +136,7 @@ exec(con, q)
 list(con)
 ```
 
-So, once relations are there we can start putting the constraint that will help as have a consistent data model for our retail business. First the Primery Keys for our relations/tables.
+So, once relations are there we can start putting the constraint that will help as have a consistent data model for our retail business. First the Primary Keys for our relations/tables.
 
 ```{r}
 # Add PK to customers
@@ -377,7 +377,7 @@ END;
 $$;")
 ```
 
-With those error controls one guaranties that the operations work fine or give some information about the potential problems while keeping de DBs in a correct status.
+With those error controls one guaranties that the operations work fine or give some information about the potential problems while keeping the DBs in a correct status.
 
 ```{r}
 dbExecute(con, "CALL sale('Iraitz', 'Geitost', 0.10, 1, 5)")
