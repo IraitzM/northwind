@@ -1,4 +1,4 @@
-# Let's manipualte some data
+# Let's manipulate some data
 # First we will need to import required libraries to interact with our local PostgreSQL RDBMS
 renv::restore()
 
