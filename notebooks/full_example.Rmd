@@ -8,6 +8,7 @@ This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook where several asp
 For this notebook to work, one of the first things we will need to do is have a RDBMS system running. In particular, [PostgreSQL](https://www.postgresql.org/) will be used so you can download and install it or just user a docker image and instantiate an image for this demo using following commands:
 
 To pull the image from the repository
+
 * docker pull postgres
 
 Container can be started, killed and restarted as many times as you want:
@@ -35,7 +36,7 @@ source('../src/aux_functions.R')
 We have the RDBMS up and running and all libraries loaded to start working. Lets first connect to the database.
 
 ```{r}
-dhost <- '172.17.0.2'
+dhost <- 'localhost'
 
 # Let's connect to our database
 con <- DBI::dbConnect(RPostgres::Postgres(), 
