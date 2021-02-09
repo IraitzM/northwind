@@ -9,15 +9,14 @@ source('src/aux_functions.R')
 # PostgreSQL
 
 # Could be used Docker for this:
-# 1. docker pull postgres
-# 2. docker run --name some-postgres -e POSTGRES_PASSWORD=postgres -d postgres
-# 3. docker inspect some-postgres
+# 1. docker run --name some-postgres -e POSTGRES_PASSWORD=mysecretpassword -p 5432:5432 -d postgres:13
+# 2. docker inspect some-postgres
 dhost <- '172.17.0.2'
 
 # Let's connect to our database
 con <- DBI::dbConnect(RPostgres::Postgres(), 
                       user= 'postgres', 
-                      password = 'postgres', 
+                      password = 'mysecretpassword', 
                       host=dhost)
 
 # List existing tables
@@ -105,9 +104,6 @@ exec(con, q)
 # List existing tables
 list(con)
 
-# Show the tables
-show(con)
-
 # Constraints ##################################################################
 # Add PK to customers
 q <-'ALTER TABLE ONLY customers
@@ -153,9 +149,6 @@ exec(con, q)
 q <-'ALTER TABLE ONLY order_details
 ADD CONSTRAINT fk_order_details_orders FOREIGN KEY (orderid) REFERENCES orders;'
 exec(con, q)
-
-# Show it
-show(con)
 
 # Disconnect from the database
 dbDisconnect(con)

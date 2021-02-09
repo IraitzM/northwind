@@ -16,7 +16,7 @@ dhost <- '172.17.0.2'
 # Let's connect to our database
 con <- DBI::dbConnect(RPostgres::Postgres(), 
                       user= 'postgres', 
-                      password = 'postgres', 
+                      password = 'mysecretpassword', 
                       host=dhost)
 
 # List existing tables

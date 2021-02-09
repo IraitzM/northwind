@@ -13,7 +13,7 @@ To pull the image from the repository
 
 Container can be started, killed and restarted as many times as you want:
 
-* docker run --name some-postgres -e POSTGRES_PASSWORD=postgres -d postgres
+* docker run --name some-postgres -e POSTGRES_PASSWORD=mysecretpassword -p 5432:5432 -d postgres:13
 * docker kill some-postgres
 * docker restart some-postgres
 
@@ -41,7 +41,7 @@ dhost <- 'localhost'
 # Let's connect to our database
 con <- DBI::dbConnect(RPostgres::Postgres(), 
                       user= 'postgres', 
-                      password = 'postgres', 
+                      password = 'mysecretpassword', 
                       host=dhost)
 
 # List existing tables
@@ -66,7 +66,8 @@ q <- 'CREATE TABLE customers (
     fax character varying(24)
 );'
 exec(con,q)
-show(con)
+# List existing tables
+list(con)
 ```
 
 It works, lets do the rest.
@@ -190,11 +191,7 @@ ADD CONSTRAINT fk_order_details_orders FOREIGN KEY (orderid) REFERENCES orders;'
 exec(con, q)
 ```
 
-Good! Our schema should be complete by now. Let's check.
-
-```{r}
-show(con)
-```
+Good! Our schema should be complete by now.
 
 Now that our model is complete we can use it for some data manipulation. Inserting a customer for example.
 
@@ -390,6 +387,19 @@ dbExecute(con, "CALL sale('Frankenversand', 'Harddrive', 0.10, 1, 5)")
 ```{r}
 dbExecute(con, "CALL sale('Frankenversand', 'Geitost', 0.10, 1000, 5)")
 ```
+
+```{r}
+exec(con, "UPDATE products SET unitsinstock = 10 WHERE productname = 'Geitost'")
+```
+
+```{r}
+dbExecute(con, "CALL sale('Frankenversand', 'Geitost', 0.10, 10, 5)")
+```
+```{r}
+query(con, "SELECT unitsinstock FROM products WHERE productname = 'Geitost'")
+```
+
+
 Let's clean everything up and disconnect from the database.
 
 ```{r}

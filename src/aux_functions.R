@@ -3,7 +3,6 @@ require(DBI)
 require(dplyr)
 require(arsenal)
 require(DiagrammeR)
-devtools::install_github("bergant/datamodelr")
 
 # Following function erases the table if exists
 # Parameters:
@@ -69,10 +68,10 @@ load <- function(con, fname){
 # Show model
 # Parameters:
 # -> connection : database connection
-show <- function(con){
-  sQuery <- datamodelr::dm_re_query("postgres")
-  dm <- dbGetQuery(con, sQuery) 
-  dm <- datamodelr::as.data_model(dm)
-  graph <- datamodelr::dm_create_graph(dm, rankdir = "RL")
-  datamodelr::dm_render_graph(graph)
-}
+#show <- function(con){
+#  sQuery <- datamodelr::dm_re_query("postgres")
+#  dm <- dbGetQuery(con, sQuery) 
+#  dm <- datamodelr::as.data_model(dm)
+#  graph <- datamodelr::dm_create_graph(dm, rankdir = "RL")
+#  datamodelr::dm_render_graph(graph)
+#}
