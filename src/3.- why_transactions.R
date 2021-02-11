@@ -130,8 +130,5 @@ dbExecute(con, "CALL sale('Frankenversand', 'Harddrive', 0.10, 1, 5)")
 dbExecute(con, "CALL sale('Frankenversand', 'Geitost', 0.10, 10, 5)")
 dbExecute(con, "CALL sale('Frankenversand', 'Geitost', 0.10, 1000, 5)")
 
-# Clear the database
-clearDB(con)
-
 # Disconnect
 dbDisconnect(con)

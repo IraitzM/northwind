@@ -35,7 +35,8 @@ list <- dbListTables
 # -> name : table name
 storeTable <- function(con,dataframe, name){
   
-  # TODO
+  eraseIfExists(con, name)
+  dbWriteTable(conn = con, name = name, dataframe)
 }
 
 # Send query
