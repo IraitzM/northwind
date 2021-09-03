@@ -11,7 +11,7 @@ source('src/aux_functions.R')
 # Could be used Docker for this:
 # 1. docker run --name some-postgres -e POSTGRES_PASSWORD=mysecretpassword -p 5432:5432 -d postgres:13
 # 2. docker inspect some-postgres
-dhost <- '172.17.0.2'
+dhost <- 'localhost'
 
 # Let's connect to our database
 con <- DBI::dbConnect(RPostgres::Postgres(), 
