@@ -1,8 +1,6 @@
 # Required libraries
 require(DBI)
 require(dplyr)
-require(arsenal)
-require(DiagrammeR)
 
 # Following function erases the table if exists
 # Parameters:
@@ -65,14 +63,3 @@ load <- function(con, fname){
   colnames(df)<-tolower(colnames(df))
   dbAppendTable(con, fname, df)
 }
-
-# Show model
-# Parameters:
-# -> connection : database connection
-#show <- function(con){
-#  sQuery <- datamodelr::dm_re_query("postgres")
-#  dm <- dbGetQuery(con, sQuery) 
-#  dm <- datamodelr::as.data_model(dm)
-#  graph <- datamodelr::dm_create_graph(dm, rankdir = "RL")
-#  datamodelr::dm_render_graph(graph)
-#}
