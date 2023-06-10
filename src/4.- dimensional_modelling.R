@@ -1,6 +1,7 @@
-# Let's manipulate some data
+# Let's explore how to model our retail database
 # First we will need to import required libraries to interact with our local PostgreSQL RDBMS
-renv::restore()
+#install.packages("pacman")
+library(pacman)
 
 # Auxiliary functions
 source('src/aux_functions.R')
@@ -9,12 +10,12 @@ source('src/aux_functions.R')
 # PostgreSQL
 
 # Could be used Docker for this:
-# 1. docker restart some-postgres
-# 3. docker inspect some-postgres
+# 1. docker run --name some-postgres -e POSTGRES_PASSWORD=mysecretpassword -p 5432:5432 -d postgres:13
+# 2. docker inspect some-postgres
 dhost <- 'localhost'
 
 # Let's connect to our database
-con <- DBI::dbConnect(RPostgres::Postgres(), 
+con <- DBI::dbConnect(PostgreSQL(), 
                       user= 'postgres', 
                       password = 'mysecretpassword', 
                       host=dhost)
@@ -23,9 +24,9 @@ con <- DBI::dbConnect(RPostgres::Postgres(),
 list(con)
 
 # Now we will create some dimensions from existing data. This is a simple way to take both the schema and the data in one sentence
-query(con, "CREATE TABLE customer_dim AS SELECT customerid, companyname, region, city FROM customers")
-query(con, "CREATE TABLE order_dim AS SELECT orderid, orderdate, shipvia, freight FROM orders")
-query(con, "CREATE TABLE product_dim AS SELECT productid, productname, unitprice, unitsinstock FROM products")
+exec(con, "CREATE TABLE customer_dim AS SELECT customerid, companyname, region, city FROM customers")
+exec(con, "CREATE TABLE order_dim AS SELECT orderid, orderdate, shipvia, freight FROM orders")
+exec(con, "CREATE TABLE product_dim AS SELECT productid, productname, unitprice, unitsinstock FROM products")
 
 # And add corresponding primary keys
 exec(con, 'ALTER TABLE ONLY customer_dim ADD CONSTRAINT pk_customer PRIMARY KEY (customerid);')
@@ -33,7 +34,7 @@ exec(con, 'ALTER TABLE ONLY product_dim ADD CONSTRAINT pk_product PRIMARY KEY (p
 exec(con, 'ALTER TABLE ONLY order_dim ADD CONSTRAINT pk_order PRIMARY KEY (orderid);')
 
 # With that create our fact table for orderline
-query(con, "CREATE TABLE orderline_fact AS SELECT od.*, customerid, orderdate FROM orders o INNER JOIN order_details od ON od.orderid = o.orderid")
+exec(con, "CREATE TABLE orderline_fact AS SELECT od.*, customerid, orderdate FROM orders o INNER JOIN order_details od ON od.orderid = o.orderid")
 exec(con, 'ALTER TABLE ONLY orderline_fact ADD CONSTRAINT pk_olfact PRIMARY KEY (customerid, productid, orderid);')
 
 # And relate facts table with dimension tables

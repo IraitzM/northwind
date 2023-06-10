@@ -1,6 +1,7 @@
 # Let's explore how to model our retail database
 # First we will need to import required libraries to interact with our local PostgreSQL RDBMS
-renv::restore()
+#install.packages("pacman")
+library(pacman)
 
 # Auxiliary functions
 source('src/aux_functions.R')
@@ -14,7 +15,7 @@ source('src/aux_functions.R')
 dhost <- 'localhost'
 
 # Let's connect to our database
-con <- DBI::dbConnect(RPostgres::Postgres(), 
+con <- DBI::dbConnect(PostgreSQL(), 
                       user= 'postgres', 
                       password = 'mysecretpassword', 
                       host=dhost)
@@ -152,3 +153,4 @@ exec(con, q)
 
 # Disconnect from the database
 dbDisconnect(con)
+

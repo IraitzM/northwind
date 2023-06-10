@@ -1,6 +1,7 @@
-# Let's explore why the need for transactions
+# Let's explore how to model our retail database
 # First we will need to import required libraries to interact with our local PostgreSQL RDBMS
-renv::restore()
+#install.packages("pacman")
+library(pacman)
 
 # Auxiliary functions
 source('src/aux_functions.R')
@@ -9,12 +10,12 @@ source('src/aux_functions.R')
 # PostgreSQL
 
 # Could be used Docker for this:
-# 1. docker restart some-postgres
-# 3. docker inspect some-postgres
+# 1. docker run --name some-postgres -e POSTGRES_PASSWORD=mysecretpassword -p 5432:5432 -d postgres:13
+# 2. docker inspect some-postgres
 dhost <- 'localhost'
 
 # Let's connect to our database
-con <- DBI::dbConnect(RPostgres::Postgres(), 
+con <- DBI::dbConnect(PostgreSQL(), 
                       user= 'postgres', 
                       password = 'mysecretpassword', 
                       host=dhost)

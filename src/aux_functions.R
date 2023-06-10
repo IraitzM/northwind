@@ -1,6 +1,6 @@
 # Required libraries
-require(DBI)
-require(dplyr)
+pacman::p_load(RPostgreSQL)
+pacman::p_load(dplyr)
 
 # Following function erases the table if exists
 # Parameters:
@@ -42,7 +42,7 @@ storeTable <- function(con,dataframe, name){
 # -> connection : database connection
 # -> query : query to be sent
 query <- function(con, query){
-  dbFetch(dbSendQuery(con, query))
+  fetch(dbSendQuery(con, query), n= -1)
 }
 
 # Exec command
@@ -61,5 +61,5 @@ exec <- function(con, query){
 load <- function(con, fname){
   df <- read.csv(paste0("data/", fname, ".csv"), as.is=T, sep = ',')
   colnames(df)<-tolower(colnames(df))
-  dbAppendTable(con, fname, df)
+  dbWriteTable(con, fname, df, row.names = F, append = T)
 }
