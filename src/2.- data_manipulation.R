@@ -64,6 +64,18 @@ FROM employees e
 INNER JOIN orders o ON o.employeeid = e.employeeid")
 View(res)
 
+# Using dplyr
+employees <- tbl(con, "employees")
+orders <- tbl(con, "orders")
+by <- join_by(employeeid)
+data <- inner_join(employees, orders)
+
+employees %>% show_query()
+orders %>% show_query()
+data %>% show_query()
+df <- data %>% collect()
+View(df)
+
 # And ask for computation
 res <- query(con, "SELECT e.firstname, count(orderid) as sales
 FROM employees e
