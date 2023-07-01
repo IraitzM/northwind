@@ -18,6 +18,7 @@ dhost <- 'localhost'
 con <- DBI::dbConnect(PostgreSQL(), 
                       user= 'postgres', 
                       password = 'mysecretpassword', 
+                      options="-c search_path=analytics",
                       host=dhost)
 
 # List existing tables
@@ -71,6 +72,4 @@ cube <- query(con, "SELECT date_part('year', orderdate)::TEXT || date_part('mont
 storeTable(con, cube, "salesprice")
 
 # We could wrangle a little bit more or create some reports connected to our data repository. 
-# Or just clear everything up
-clearDB(con)
 DBI::dbDisconnect(con)
