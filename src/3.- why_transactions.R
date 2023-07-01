@@ -129,7 +129,12 @@ $$;")
 dbExecute(con, "CALL sale('Iraitz', 'Geitost', 0.10, 1, 5)")
 dbExecute(con, "CALL sale('Frankenversand', 'Harddrive', 0.10, 1, 5)")
 dbExecute(con, "CALL sale('Frankenversand', 'Geitost', 0.10, 10, 5)")
+
+exec(con, "UPDATE products SET unitsinstock = 1000 WHERE productname = 'Geitost'")
 dbExecute(con, "CALL sale('Frankenversand', 'Geitost', 0.10, 1000, 5)")
+query(con, "SELECT unitsinstock FROM products WHERE productname = 'Geitost'")$unitsinstock
+
+dbExecute(con, "CALL sale('Frankenversand', 'Geitost', 0.10, 10, 5)")
 
 # Disconnect
 dbDisconnect(con)
